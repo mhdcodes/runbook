@@ -231,13 +231,34 @@ describe("saveRunbook", () => {
 
   it("keeps a symlinked runbook a symlink, and writes the file it points to", async () => {
     await mkdir(dir, { recursive: true });
-    const real = join(root, "elsewhere.md");
+    const real = join(dir, "real.md");
     await writeFile(real, TEXT);
     await symlink(real, join(dir, "linked.md"));
     const runbook = await readRunbook(dir, join(dir, "linked.md"));
     await saveRunbook(dir, { ...runbook, title: "Through the link" });
     expect((await lstat(join(dir, "linked.md"))).isSymbolicLink()).toBe(true);
     expect(await readFile(real, "utf8")).toContain("title: Through the link");
+  });
+
+  it("refuses to write through a symlink leading out of the folder", async () => {
+    await mkdir(dir, { recursive: true });
+    const outside = join(root, "outside.md");
+    await writeFile(outside, TEXT);
+    await symlink(outside, join(dir, "linked.md"));
+    const runbook = await readRunbook(dir, join(dir, "linked.md"));
+    await expect(saveRunbook(dir, { ...runbook, title: "Hijacked" })).rejects.toThrow("outside");
+    expect(await readFile(outside, "utf8")).toBe(TEXT);
+  });
+
+  it("doesn't follow a symlink planted at the temp file's name", async () => {
+    const runbook = await opened();
+    const victim = join(root, "victim");
+    await writeFile(victim, "untouched");
+    await symlink(victim, `${runbook.path}.tmp`);
+    await saveRunbook(dir, { ...runbook, title: "Saved" });
+    expect(await readFile(victim, "utf8")).toBe("untouched");
+    expect(await readFile(runbook.path, "utf8")).toContain("title: Saved");
+    expect(await readdir(dir)).toEqual(["notes.md"]);
   });
 
   it("keeps the file's permissions", async () => {
@@ -443,7 +464,7 @@ describe("renameRunbook", () => {
 
   it("keeps a symlinked runbook a symlink", async () => {
     await mkdir(dir, { recursive: true });
-    const real = join(root, "elsewhere.md");
+    const real = join(dir, "elsewhere.md");
     await writeFile(real, "---\ntitle: Linked\n---\n");
     await symlink(real, join(dir, "linked.md"));
     const renamed = await renameRunbook(dir, join(dir, "linked.md"), "Moved link");

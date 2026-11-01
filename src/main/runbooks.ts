@@ -191,6 +191,7 @@ export async function renameRunbook(
   }
   const runbook = parse(text, from);
   // Before the file moves: a refused write must leave it where it was.
+  await writeTarget(dir, from);
   await assertWritable(from);
   let to = from;
   for (const name of await freeNames(dir, title, from)) {
@@ -304,18 +305,24 @@ async function writeKnown(dir: string, path: string, text: string): Promise<void
   known.set(path, fingerprint(text));
 }
 
-async function writeAtomically(dir: string, path: string, text: string): Promise<void> {
-  // Renaming onto a symlink would replace the link with a plain file, so write next
-  // to the file it points to. A file that doesn't exist yet is written where it is.
+// The file a write to `path` lands on. Renaming onto a symlink would replace the link
+// with a plain file, so a write goes next to the file it points to; a file that doesn't
+// exist yet is written where it is. A link leading out of the folder (say, one shipped
+// by a cloned repo) must not make a save overwrite a file elsewhere on disk, such as
+// ~/.bashrc, so it is refused.
+async function writeTarget(dir: string, path: string): Promise<string> {
   const root = await realpath(dir);
   const target = await realpath(path).catch(() => join(root, basename(path)));
-  // A link leading out of the folder (say, one shipped by a cloned repo) must not make
-  // a save overwrite a file elsewhere on disk, such as ~/.bashrc.
   if (dirname(target) !== root) {
     throw new Error(
       `${basename(path)} is a link to a file outside the runbooks folder, so Runbook won't write to it`,
     );
   }
+  return target;
+}
+
+async function writeAtomically(dir: string, path: string, text: string): Promise<void> {
+  const target = await writeTarget(dir, path);
   await assertWritable(target);
   const mode = await stat(target).then(
     (info) => info.mode & 0o777,

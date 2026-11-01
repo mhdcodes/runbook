@@ -472,6 +472,17 @@ describe("renameRunbook", () => {
     expect(await readFile(real, "utf8")).toBe("---\ntitle: Moved link\n---\n");
   });
 
+  it("leaves a symlink leading out of the folder where it was", async () => {
+    await mkdir(dir, { recursive: true });
+    const outside = join(root, "outside.md");
+    await writeFile(outside, "---\ntitle: Old\n---\n");
+    await symlink(outside, join(dir, "linked.md"));
+    await expect(renameRunbook(dir, join(dir, "linked.md"), "New")).rejects.toThrow("outside");
+    expect(await readdir(dir)).toEqual(["linked.md"]);
+    expect((await lstat(join(dir, "linked.md"))).isSymbolicLink()).toBe(true);
+    expect(await readFile(outside, "utf8")).toBe("---\ntitle: Old\n---\n");
+  });
+
   it("refuses a blank title or a path outside the folder", async () => {
     const path = await file("a.md", "x");
     await expect(renameRunbook(dir, path, " ")).rejects.toThrow("needs a title");

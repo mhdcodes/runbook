@@ -299,4 +299,17 @@ describe("run tracker: renaming and deleting a runbook", () => {
     expect(get(tracker.runs)[NB]).toBeUndefined();
     expect(tracker.existingPane(NB, "c1")).toBeUndefined();
   });
+
+  it("forgets every runbook when the folder changes, and drops their late events", () => {
+    const { tracker, created, status, output, state } = setup();
+    status("c1", "running");
+    state({ runbookPath: NB, state: "busy" });
+    state({ runbookPath: "/n/b.md", state: "ready" });
+    const { forgetAll } = tracker; // used unbound, as lib/runs.ts exports it
+    forgetAll();
+    status("c1", "interrupted");
+    output("c1", "late");
+    expect(created[0]?.calls.at(-1)).toBe("dispose");
+    expect(get(tracker.runs)).toEqual({});
+  });
 });

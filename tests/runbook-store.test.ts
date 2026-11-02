@@ -419,3 +419,43 @@ describe("runbook store: rename and delete", () => {
     expect(get(store)["/n/a.md"]?.title).toBe("Kept");
   });
 });
+
+describe("runbook store: changing folder", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("lists the runbooks whose edits a flush couldn't save", async () => {
+    const store = createRunbookStore({
+      save: async (saved) => {
+        if (saved.path === "/n/bad.md") throw new Error("disk full");
+        if (saved.path === "/n/moved.md") return "changed";
+        return "saved";
+      },
+    });
+    for (const path of ["/n/a.md", "/n/bad.md", "/n/moved.md"]) {
+      store.open(runbook(path));
+      store.edit(path, (open) => setTitle(open, "Edited"));
+    }
+    await store.flushAll();
+    expect(store.unsavedPaths().toSorted()).toEqual(["/n/bad.md", "/n/moved.md"]);
+  });
+
+  it("clears every runbook, with its errors, conflicts and pending saves", async () => {
+    const save = vi.fn(async (saved: Runbook) =>
+      saved.path === "/n/b.md" ? "changed" : undefined,
+    );
+    const store = createRunbookStore({ save });
+    store.open(runbook("/n/a.md"));
+    store.open(runbook("/n/b.md"));
+    store.edit("/n/b.md", (open) => setTitle(open, "B"));
+    await store.flush("/n/b.md").catch(() => {});
+    store.edit("/n/a.md", (open) => setTitle(open, "Pending"));
+    save.mockClear();
+    store.clear();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(save).not.toHaveBeenCalled();
+    expect(get(store)).toEqual({});
+    expect(get(store.conflicts)).toEqual({});
+    expect(store.unsavedPaths()).toEqual([]);
+  });
+});

@@ -4,6 +4,7 @@
   import { refocus, rowKey } from "../lib/focus";
   import { runs } from "../lib/runs";
   import { aroundMatch, highlight } from "../state/highlight";
+  import { withTilde } from "../state/paths";
   import Icon from "./Icon.svelte";
   import Menu from "./Menu.svelte";
   import SessionDot from "./SessionDot.svelte";
@@ -20,6 +21,7 @@
     ondelete: (path: string) => void;
     onreveal: (path: string) => void;
     onopenfolder: () => void; // the footer: opens the runbooks folder
+    onsettings: () => void; // the footer's gear: opens the settings dialog
     onclearsession: (path: string) => void;
   }
 
@@ -33,11 +35,11 @@
     ondelete,
     onreveal,
     onopenfolder,
+    onsettings,
     onclearsession,
   }: Props = $props();
 
-  // ~/Runbooks rather than /home/someone/Runbooks.
-  const shownFolder = $derived(folder.replace(/^\/home\/[^/]+(?=\/|$)/, "~"));
+  const shownFolder = $derived(withTilde(folder));
 
   // Search: an empty query shows every runbook; otherwise the results,
   // each with a one-line snippet. Queries wait 150 ms after the last keystroke.
@@ -81,6 +83,15 @@
   });
 
   let searchInput: HTMLInputElement | undefined = $state();
+
+  // The runbooks folder changed: what was searched for was in the old one.
+  export function clearSearch(): void {
+    search("");
+    creating = false;
+    newTitle = "";
+    renaming = null;
+    menu = null;
+  }
 
   // Ctrl+K.
   export function focusSearch(): void {
@@ -394,14 +405,26 @@
     {/if}
   </div>
 
-  <button
-    type="button"
-    class="-mx-2 flex h-10 flex-none items-center gap-2 border-t border-rule-soft pr-3 pl-[18px] text-left font-mono text-meta text-faint hover:text-ink focus-visible:-outline-offset-2"
-    title={`Open ${folder}`}
-    onclick={onopenfolder}
-  >
-    <Icon name="folder" size={14} /><span class="truncate">{shownFolder}</span>
-  </button>
+  <div class="-mx-2 flex h-10 flex-none items-stretch border-t border-rule-soft">
+    <button
+      type="button"
+      class="flex min-w-0 flex-1 items-center gap-2 pr-2 pl-[18px] text-left font-mono text-meta text-faint hover:text-ink focus-visible:-outline-offset-2"
+      title={`Open ${folder}`}
+      onclick={onopenfolder}
+    >
+      <Icon name="folder" size={14} /><span class="truncate">{shownFolder}</span>
+    </button>
+    <button
+      type="button"
+      class="grid w-10 flex-none place-items-center text-faint hover:text-ink focus-visible:-outline-offset-2"
+      title="Settings"
+      aria-label="Settings"
+      aria-haspopup="dialog"
+      onclick={onsettings}
+    >
+      <Icon name="gear" size={14} />
+    </button>
+  </div>
 </nav>
 
 {#if menu}

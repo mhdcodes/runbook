@@ -16,6 +16,7 @@ export const {
   forgetCell,
   renameRunbook: renameRuns,
   forgetRunbook: forgetRuns,
+  forgetAll: forgetAllRuns,
   claimPath,
 } = tracker;
 

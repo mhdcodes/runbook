@@ -79,12 +79,11 @@ if (!app.requestSingleInstanceLock()) {
         console.error("Could not load the window state:", error);
         return null;
       });
-      const settings = await loadSettings(join(app.getPath("userData"), "settings.json")).catch(
-        (error: unknown) => {
-          console.error("Could not load settings, using defaults:", error);
-          return defaultSettings();
-        },
-      );
+      const settingsFile = join(app.getPath("userData"), "settings.json");
+      const settings = await loadSettings(settingsFile).catch((error: unknown) => {
+        console.error("Could not load settings, using defaults:", error);
+        return defaultSettings();
+      });
       await ensureRunbooksDir(settings.runbooksDir).catch((error: unknown) => {
         console.error("Could not prepare the runbooks folder:", error);
       });
@@ -104,8 +103,14 @@ if (!app.requestSingleInstanceLock()) {
             return null;
           });
       }
-      registerIpc(settings, sessions, updater, () => {
-        restartAfterQuit = true;
+      registerIpc({
+        settings,
+        settingsFile,
+        sessions,
+        updater,
+        restart: () => {
+          restartAfterQuit = true;
+        },
       });
 
       createWindow(await windowState, windowStateFile);

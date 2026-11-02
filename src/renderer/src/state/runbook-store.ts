@@ -37,6 +37,12 @@ export interface RunbookStore extends Readable<Record<string, Runbook>> {
   // Saves the runbook now if it has unsaved changes. Resolves once it is saved.
   flush(path: string): Promise<void>;
   flushAll(): Promise<void>;
+  // The paths of runbooks with edits not in their file: after flushAll, the ones whose
+  // save failed or that are in conflict.
+  unsavedPaths(): string[];
+  // Drops every runbook, with its unsaved edits and pending saves (the runbooks
+  // folder changed). Call it after flushAll, with unsavedPaths empty.
+  clear(): void;
   // Renames a runbook: saves its pending edits, holds its autosave while `perform`
   // (main's rename) moves the file, then moves it to the new path, keeping its cells
   // (their IDs key the run state) and any edits made meanwhile. Resolves with the
@@ -242,6 +248,11 @@ export function createRunbookStore({
     async flushAll() {
       const paths = [...new Set([...unsaved, ...saving.keys()])];
       await Promise.allSettled(paths.map((path) => flush(path)));
+    },
+    unsavedPaths: () => [...unsaved],
+    clear() {
+      for (const path of Object.keys(current)) drop(path);
+      for (const path of unsaved) drop(path); // deleting while iterating a Set is safe
     },
   };
 }

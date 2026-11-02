@@ -32,6 +32,11 @@ export interface Api {
   listRunbooks: () => Promise<RunbookSummary[]>;
   readRunbook: (path: string) => Promise<Runbook>;
   getSettings: () => Promise<Settings>;
+  // The folder picker, starting in `from`; resolves with the folder, or null if cancelled.
+  chooseFolder: (from: string) => Promise<string | null>;
+  // Applies the changed settings and writes settings.json; resolves with them all. A new
+  // runbooks folder is prepared first, then every shell is closed and search starts over.
+  saveSettings: (change: Partial<Settings>) => Promise<Settings>;
   // How the file compares with what the app last read or wrote.
   checkRunbook: (path: string) => Promise<DiskState>;
   // Atomic write. "changed" or "missing": the file changed or went away outside the app

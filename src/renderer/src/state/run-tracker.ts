@@ -60,6 +60,9 @@ export interface RunTracker<P extends TrackedPane> {
   renameRunbook(from: string, to: string): void;
   // Frees everything kept for a deleted runbook.
   forgetRunbook(runbookPath: string): void;
+  // Frees everything, for every runbook (the runbooks folder changed, and main closed
+  // every shell). Late events from those shells are dropped.
+  forgetAll(): void;
   // A runbook now lives at `path` (just created there): events for it are its own,
   // not a renamed runbook's that used to live there.
   claimPath(path: string): void;
@@ -130,6 +133,17 @@ export function createRunTracker<P extends TrackedPane>(
     if (!runbookPanes) panes.set(runbookPath, (runbookPanes = new Map()));
     runbookPanes.set(cellId, pane);
     return pane;
+  }
+
+  function forgetRunbook(runbookPath: string): void {
+    const runbookPanes = panes.get(runbookPath);
+    // Like forgetCell for each cell that ran: its last events may still be on the way.
+    for (const [cellId, pane] of runbookPanes ?? []) {
+      forgotten.add(key(runbookPath, cellId));
+      pane.dispose();
+    }
+    panes.delete(runbookPath);
+    runs.forgetRunbook(runbookPath);
   }
 
   return {
@@ -240,15 +254,11 @@ export function createRunTracker<P extends TrackedPane>(
       renamedTo.delete(path);
     },
 
-    forgetRunbook(runbookPath) {
-      const runbookPanes = panes.get(runbookPath);
-      // Like forgetCell for each cell that ran: its last events may still be on the way.
-      for (const [cellId, pane] of runbookPanes ?? []) {
-        forgotten.add(key(runbookPath, cellId));
-        pane.dispose();
-      }
-      panes.delete(runbookPath);
-      runs.forgetRunbook(runbookPath);
+    forgetRunbook,
+
+    forgetAll() {
+      for (const path of new Set([...panes.keys(), ...Object.keys(latest)])) forgetRunbook(path);
+      renamedTo.clear();
     },
   };
 }

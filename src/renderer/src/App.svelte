@@ -1,13 +1,21 @@
 <script lang="ts">
-  import type { Runbook, RunbookSummary } from "../../shared/types";
+  import type { Runbook, RunbookSummary, Settings } from "../../shared/types";
   import { messageOf } from "./state/errors";
   import KeyboardShortcuts from "./components/KeyboardShortcuts.svelte";
   import RunbookView from "./components/RunbookView.svelte";
+  import SettingsDialog from "./components/SettingsDialog.svelte";
   import Sidebar from "./components/Sidebar.svelte";
   import UpdateBanner from "./components/UpdateBanner.svelte";
   import { runbooks as openRunbooks } from "./lib/runbooks";
   import { previewOf } from "../../shared/preview";
-  import { claimPath, closeSession, forgetRuns, renameRuns, runs } from "./lib/runs";
+  import {
+    claimPath,
+    closeSession,
+    forgetAllRuns,
+    forgetRuns,
+    renameRuns,
+    runs,
+  } from "./lib/runs";
   import { refocus, rowKey } from "./lib/focus";
 
   const saveErrors = openRunbooks.errors;
@@ -21,13 +29,14 @@
   let error: string | null = $state(null);
   let sidebar: ReturnType<typeof Sidebar> | undefined = $state();
   let shortcuts: ReturnType<typeof KeyboardShortcuts> | undefined = $state();
+  let settingsDialog: ReturnType<typeof SettingsDialog> | undefined = $state();
 
   // Window-wide shortcuts, all listed in KeyboardShortcuts.svelte. Not inside a running
   // cell's output pane: there Ctrl+N and Ctrl+K are bash's own keys (previous command,
   // kill to end of line).
   function onkeydown(event: KeyboardEvent): void {
-    // The open dialog has the keyboard; Esc closes it natively.
-    if (event.defaultPrevented || shortcuts?.isOpen()) return;
+    // An open dialog has the keyboard; Esc closes it natively.
+    if (event.defaultPrevented || shortcuts?.isOpen() || settingsDialog?.isOpen()) return;
     if (event.key === "?" && !event.ctrlKey && !event.altKey && !event.metaKey) {
       if (isTyping(event.target)) return;
       event.preventDefault();
@@ -258,6 +267,50 @@
     });
   }
 
+  function openSettings(): void {
+    window.api.getSettings().then(
+      (settings) => settingsDialog?.show(settings),
+      (cause: unknown) => {
+        error = messageOf(cause);
+      },
+    );
+  }
+
+  // The settings dialog's Save. Resolves false if the user backs out; throws to show
+  // the error in the dialog, with nothing changed.
+  async function applySettings(change: Partial<Settings>): Promise<boolean> {
+    const folderChanges = change.runbooksDir !== undefined;
+    if (folderChanges) {
+      const running = Object.values($runs).some((run) => run.session === "busy");
+      if (running && !window.confirm("Cells are still running. Change the folder and stop them?")) {
+        return false;
+      }
+      // Every edit goes into its file first. One that can't be saved (an error, or a
+      // file changed outside Runbook) would be lost with the old folder, so it stops here.
+      await openRunbooks.flushAll();
+      const [stuck] = openRunbooks.unsavedPaths();
+      if (stuck !== undefined) {
+        const title = openRunbooks.get(stuck)?.title ?? stuck;
+        throw new Error(
+          `“${title}” has edits that couldn't be saved, so the folder wasn't changed. Save it or resolve its conflict first.`,
+        );
+      }
+    }
+    await window.api.saveSettings(change);
+    if (folderChanges) {
+      // Main has closed every shell: what the window kept was the old folder's.
+      forgetAllRuns();
+      openRunbooks.clear();
+      sidebar?.clearSearch();
+      selected = null;
+      shown = null;
+      runbooks = [];
+      error = null;
+      await load();
+    }
+    return true;
+  }
+
   async function load(): Promise<void> {
     try {
       const [settings, list] = await Promise.all([
@@ -292,6 +345,7 @@
     ondelete={(path) => void remove(path)}
     onreveal={reveal}
     onopenfolder={openFolder}
+    onsettings={openSettings}
     onclearsession={(path) => void clearSession(path)}
   />
 
@@ -362,3 +416,4 @@
 </div>
 
 <KeyboardShortcuts bind:this={shortcuts} />
+<SettingsDialog bind:this={settingsDialog} onsave={applySettings} />

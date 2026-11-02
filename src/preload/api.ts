@@ -8,6 +8,7 @@ import type {
   SessionEnd,
   SessionState,
   Settings,
+  UpdateState,
 } from "../shared/types";
 
 export interface CellOutputEvent {
@@ -64,4 +65,12 @@ export interface Api {
   onCellOutput: (callback: (event: CellOutputEvent) => void) => () => void;
   onCellStatus: (callback: (event: CellStatusEvent) => void) => () => void;
   onSessionState: (callback: (event: SessionStateEvent) => void) => () => void;
+
+  // AppImage updates. Always "idle" in the .deb, in dev and with checkForUpdates off.
+  getUpdateState: () => Promise<UpdateState>;
+  // Downloads the available update (or retries a failed one); progress comes as events.
+  downloadUpdate: () => Promise<void>;
+  // Quits, installing the downloaded update, and starts the new version.
+  installUpdate: () => Promise<void>;
+  onUpdateState: (callback: (state: UpdateState) => void) => () => void;
 }

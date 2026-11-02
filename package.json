@@ -13,7 +13,7 @@
     "dev": "install-electron && electron-vite dev --noSandbox",
     "start": "install-electron && electron-vite preview --noSandbox",
     "build": "pnpm typecheck && electron-vite build",
-    "dist": "pnpm build && electron-builder",
+    "dist": "pnpm build && electron-builder --publish never",
     "typecheck": "tsc -b && svelte-check --tsconfig ./tsconfig.web.json --fail-on-warnings",
     "lint": "oxlint --deny-warnings",
     "lint:fix": "oxlint --fix",
@@ -55,6 +55,7 @@
   "desktopName": "runbook.desktop",
   "productName": "Runbook",
   "dependencies": {
+    "electron-updater": "6.8.11",
     "markdown-it": "15.0.3",
     "minisearch": "7.2.0",
     "nanoid": "6.0.2",

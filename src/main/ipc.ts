@@ -1,7 +1,7 @@
 // IPC handlers behind `window.api`. Validation lives in the modules they call.
 
-import { BrowserWindow, ipcMain, shell } from "electron";
-import type { Settings } from "../shared/types";
+import { app, BrowserWindow, ipcMain, shell } from "electron";
+import type { Settings, UpdateState } from "../shared/types";
 import {
   checkRunbook,
   createRunbook,
@@ -15,8 +15,16 @@ import {
 import { RunbookIndex } from "./search";
 import type { SessionManager } from "./shell/manager";
 import { OutputBatcher } from "./shell/output-batcher";
+import type { Updater } from "./updater";
 
-export function registerIpc(settings: Settings, sessions: SessionManager): void {
+// `updater` is null where updates are off: the .deb, dev runs, or checkForUpdates false.
+// `restart` is called when the user asks to restart into a downloaded update.
+export function registerIpc(
+  settings: Settings,
+  sessions: SessionManager,
+  updater: Updater | null,
+  restart: () => void,
+): void {
   // Built on the first search, then kept current by the handlers below.
   const index = new RunbookIndex(settings.runbooksDir);
 
@@ -99,6 +107,16 @@ export function registerIpc(settings: Settings, sessions: SessionManager): void 
     broadcast("cell:status", event);
   });
   sessions.on("state", (event) => broadcast("session:state", event));
+
+  ipcMain.handle("updates:get", (): UpdateState => updater?.state ?? { state: "idle" });
+  ipcMain.handle("updates:download", () => updater?.download());
+  // Quits the normal way (edits saved, shells closed); quitting installs the update.
+  ipcMain.handle("updates:install", () => {
+    if (updater?.state.state !== "ready") return;
+    restart();
+    app.quit();
+  });
+  updater?.on("state", (state) => broadcast("updates:state", state));
 }
 
 function isTerminalSize(value: unknown): value is number {

@@ -49,6 +49,10 @@ const api: Api = {
   onCellOutput: channel("cell:output"),
   onCellStatus: channel("cell:status"),
   onSessionState: channel("session:state"),
+  getUpdateState: () => ipcRenderer.invoke("updates:get"),
+  downloadUpdate: () => ipcRenderer.invoke("updates:download"),
+  installUpdate: () => ipcRenderer.invoke("updates:install"),
+  onUpdateState: channel("updates:state"),
 };
 
 contextBridge.exposeInMainWorld("api", api);

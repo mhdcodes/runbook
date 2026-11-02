@@ -49,4 +49,10 @@ deb:
     - libsecret-1-0 # keyring for the enableCookieEncryption fuse
     - xdg-utils # xdg-open, used by shell.openExternal
 
-publish: null
+# Only so the build writes latest-linux.yml (and app-update.yml inside the AppImage),
+# which the AppImage's update check reads. Builds run with --publish never: the release
+# workflow uploads the files.
+publish:
+  provider: github
+  owner: mhdcodes
+  repo: runbook

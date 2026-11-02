@@ -3,6 +3,7 @@
   import { messageOf } from "./state/errors";
   import RunbookView from "./components/RunbookView.svelte";
   import Sidebar from "./components/Sidebar.svelte";
+  import UpdateBanner from "./components/UpdateBanner.svelte";
   import { runbooks as openRunbooks } from "./lib/runbooks";
   import { previewOf } from "../../shared/preview";
   import { claimPath, closeSession, forgetRuns, renameRuns, runs } from "./lib/runs";
@@ -268,6 +269,7 @@
   />
 
   <main class="min-w-0 overflow-y-auto">
+    <UpdateBanner />
     {#if error}
       <p
         class="mx-auto mt-6 max-[1000px]:mx-7 max-w-[680px] rounded-menu border border-[color-mix(in_srgb,var(--color-dead)_28%,var(--color-page))] bg-[color-mix(in_srgb,var(--color-dead)_8%,var(--color-page))] px-3.5 py-3 text-[14px] leading-[22px] text-body"

@@ -46,7 +46,17 @@ export interface RunbookSummary {
 
 export interface Settings {
   runbooksDir: string; // absolute path
+  checkForUpdates: boolean; // the AppImage looks for a newer release at launch
 }
+
+// Where an AppImage update stands, for the banner. "idle" also covers no update,
+// a failed check, and the .deb, which never checks.
+export type UpdateState =
+  | { state: "idle" }
+  | { state: "available"; version: string }
+  | { state: "downloading"; version: string; percent: number } // 0–100, whole numbers
+  | { state: "ready"; version: string } // installed when the app quits
+  | { state: "failed"; version: string; message: string };
 
 // A runbook's file compared with what the app last read or wrote: changed by
 // another editor, git or a cell; or moved away or deleted.

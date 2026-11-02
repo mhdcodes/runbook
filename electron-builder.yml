@@ -34,7 +34,10 @@ linux:
   synopsis: Markdown notes with shell cells you can run
   syncDesktopName: true
   maintainer: MHD
-  artifactName: ${name}-${version}-${arch}.${ext}
+  # No version in the names (runbook-x86_64.AppImage, runbook-amd64.deb): an AppImage
+  # update keeps its file's name, so a version in it would be wrong after the first
+  # update, and the website links to releases/latest/download/<name>.
+  artifactName: ${name}-${arch}.${ext}
 deb:
   packageCategory: devel
   # Replaces electron-builder's default list with what runbook needs. The first four cover

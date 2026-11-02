@@ -23,7 +23,7 @@ jobs:
           cache: true
           require-lockfile: true
 
-      # before the build, so the version is baked into the app and the file names
+      # before the build, so the version is baked into the app and latest-linux.yml
       - name: Take the version from the tag
         if: startsWith(github.ref, 'refs/tags/v')
         run: npm pkg set version="${GITHUB_REF_NAME#v}"
@@ -35,14 +35,14 @@ jobs:
       # them like a release does
       - uses: actions/upload-artifact@v7
         with:
-          path: dist/runbook-*.AppImage
+          path: dist/runbook-x86_64.AppImage
           archive: false
       - uses: actions/upload-artifact@v7
         with:
-          path: dist/runbook-*.deb
+          path: dist/runbook-amd64.deb
           archive: false
       # what the AppImage's update check reads: the latest version, its AppImage's
-      # versioned name and sha512
+      # name and sha512
       - uses: actions/upload-artifact@v7
         with:
           path: dist/latest-linux.yml
@@ -59,11 +59,6 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      # the same two files under names without the version, so the website can link to
-      # releases/latest/download/<name> and always get the newest release
-      - run: |
-          cp dist/runbook-*-amd64.deb dist/runbook-amd64.deb
-          cp dist/runbook-*-x86_64.AppImage dist/runbook-x86_64.AppImage
       - uses: softprops/action-gh-release@v3
         with:
           files: dist/*

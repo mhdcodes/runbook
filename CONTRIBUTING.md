@@ -91,5 +91,5 @@ Tailwind only includes the classes it finds in those pages, so a new class shows
 until you rebuild.
 
 The download buttons link to `releases/latest/download/runbook-amd64.deb` and
-`…/runbook-x86_64.AppImage`, which GitHub redirects to the newest release. The release
-workflow uploads a copy of each file under those names, next to the versioned ones.
+`…/runbook-x86_64.AppImage`, which GitHub redirects to the newest release. The file
+names have no version, so these links never change.

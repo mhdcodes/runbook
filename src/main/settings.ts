@@ -5,7 +5,7 @@ import type { Settings } from "../shared/types";
 import { isNotFound } from "./fs";
 
 export function defaultSettings(): Settings {
-  return { runbooksDir: join(homedir(), "Runbooks") };
+  return { runbooksDir: join(homedir(), "Runbooks"), checkForUpdates: true };
 }
 
 // Reads settings.json, falling back to defaults for anything missing or invalid.
@@ -32,11 +32,14 @@ export async function loadSettings(file: string): Promise<Settings> {
   }
   if (typeof stored !== "object" || stored === null) return defaults;
 
-  const { runbooksDir } = stored as Record<string, unknown>;
+  const { runbooksDir, checkForUpdates } = stored as Record<string, unknown>;
   return {
     runbooksDir:
       typeof runbooksDir === "string" && isAbsolute(runbooksDir)
         ? runbooksDir
         : defaults.runbooksDir,
+    // Missing from settings files written before it existed: those keep checking.
+    checkForUpdates:
+      typeof checkForUpdates === "boolean" ? checkForUpdates : defaults.checkForUpdates,
   };
 }

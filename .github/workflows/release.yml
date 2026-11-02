@@ -29,7 +29,7 @@ jobs:
         run: npm pkg set version="${GITHUB_REF_NAME#v}"
 
       - run: pnpm build
-      - run: pnpm exec electron-builder --linux
+      - run: pnpm exec electron-builder --linux --publish never
 
       # one unzipped artifact per download, named after the file, so a run's page lists
       # them like a release does
@@ -40,6 +40,12 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           path: dist/runbook-*.deb
+          archive: false
+      # what the AppImage's update check reads: the latest version, its AppImage's
+      # versioned name and sha512
+      - uses: actions/upload-artifact@v7
+        with:
+          path: dist/latest-linux.yml
           archive: false
 
   release:

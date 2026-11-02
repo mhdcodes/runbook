@@ -4,6 +4,7 @@ import { registerIpc } from "./ipc";
 import { ensureRunbooksDir } from "./runbooks";
 import { defaultSettings, loadSettings } from "./settings";
 import { SessionManager } from "./shell/manager";
+import { githubSource, startAfterExit, Updater, updatesEnabled } from "./updater";
 import { createWindow } from "./window";
 import { loadWindowState } from "./window-state";
 
@@ -38,7 +39,12 @@ if (!app.requestSingleInstanceLock()) {
     rcfilePath: join(app.getPath("userData"), "rcfile.bash"),
   });
 
-  // Kill the shells and remove the run scripts' temp folder before quitting.
+  // Set at startup when this AppImage can update itself.
+  let updater: Updater | null = null;
+  let restartAfterQuit = false;
+
+  // Kill the shells and remove the run scripts' temp folder before quitting. Then put a
+  // downloaded update in place: the windows have closed by now, so edits are saved.
   let quitting = false;
   app.on("will-quit", (event) => {
     if (quitting) return;
@@ -47,7 +53,19 @@ if (!app.requestSingleInstanceLock()) {
     void sessions
       .dispose()
       .catch((error: unknown) => console.error("Could not clean up shell sessions:", error))
-      .finally(() => app.quit());
+      .finally(() => {
+        updater?.install();
+        // If the install failed, that's the old version again.
+        const appImage = process.env["APPIMAGE"];
+        if (restartAfterQuit && appImage) {
+          try {
+            startAfterExit(appImage);
+          } catch (error) {
+            console.error("Could not restart Runbook:", error);
+          }
+        }
+        app.quit();
+      });
   });
 
   void app
@@ -70,9 +88,30 @@ if (!app.requestSingleInstanceLock()) {
       await ensureRunbooksDir(settings.runbooksDir).catch((error: unknown) => {
         console.error("Could not prepare the runbooks folder:", error);
       });
-      registerIpc(settings, sessions);
+      const appImage = process.env["APPIMAGE"];
+      if (
+        appImage &&
+        updatesEnabled({
+          isPackaged: app.isPackaged,
+          appImage,
+          checkForUpdates: settings.checkForUpdates,
+        })
+      ) {
+        updater = await githubSource()
+          .then((source) => new Updater(source, appImage))
+          .catch((error: unknown) => {
+            console.error("Could not set up updates:", error);
+            return null;
+          });
+      }
+      registerIpc(settings, sessions, updater, () => {
+        restartAfterQuit = true;
+      });
 
       createWindow(await windowState, windowStateFile);
+      // Once the window is up, so the check never holds up the start.
+      const started = updater;
+      if (started) setTimeout(() => void started.check(), 5000);
     })
     // Startup failed in a way the steps above don't handle: quit rather than run on
     // with no window, which would keep the lock.

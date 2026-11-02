@@ -66,6 +66,11 @@ export function registerIpc(
     sessions.close(deleted);
     index.remove(deleted);
   });
+  // In the file manager. openPath resolves with an error message, "" when it worked.
+  ipcMain.handle("runbooks:open-folder", async () => {
+    const error = await shell.openPath(settings.runbooksDir);
+    if (error) throw new Error(error);
+  });
   ipcMain.handle("runbooks:reveal", (_event, path: unknown) => {
     shell.showItemInFolder(resolveRunbookPath(settings.runbooksDir, path));
   });

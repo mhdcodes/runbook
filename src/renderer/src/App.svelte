@@ -252,6 +252,12 @@
     });
   }
 
+  function openFolder(): void {
+    window.api.openRunbooksFolder().catch((cause: unknown) => {
+      error = messageOf(cause);
+    });
+  }
+
   async function load(): Promise<void> {
     try {
       const [settings, list] = await Promise.all([
@@ -285,6 +291,7 @@
     onrename={rename}
     ondelete={(path) => void remove(path)}
     onreveal={reveal}
+    onopenfolder={openFolder}
     onclearsession={(path) => void clearSession(path)}
   />
 

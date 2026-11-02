@@ -19,6 +19,7 @@
     onrename: (path: string, title: string) => Promise<string | null>;
     ondelete: (path: string) => void;
     onreveal: (path: string) => void;
+    onopenfolder: () => void; // the footer: opens the runbooks folder
     onclearsession: (path: string) => void;
   }
 
@@ -31,6 +32,7 @@
     onrename,
     ondelete,
     onreveal,
+    onopenfolder,
     onclearsession,
   }: Props = $props();
 
@@ -392,12 +394,14 @@
     {/if}
   </div>
 
-  <div
-    class="-mx-2 flex h-10 flex-none items-center gap-2 border-t border-rule-soft pl-[18px] font-mono text-meta text-faint"
-    title={folder}
+  <button
+    type="button"
+    class="-mx-2 flex h-10 flex-none items-center gap-2 border-t border-rule-soft pr-3 pl-[18px] text-left font-mono text-meta text-faint hover:text-ink focus-visible:-outline-offset-2"
+    title={`Open ${folder}`}
+    onclick={onopenfolder}
   >
     <Icon name="folder" size={14} /><span class="truncate">{shownFolder}</span>
-  </div>
+  </button>
 </nav>
 
 {#if menu}

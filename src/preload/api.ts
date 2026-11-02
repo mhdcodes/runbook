@@ -45,6 +45,7 @@ export interface Api {
   renameRunbook: (path: string, newTitle: string) => Promise<Runbook>;
   deleteRunbook: (path: string) => Promise<void>; // moves it to the OS trash
   showRunbookInFolder: (path: string) => Promise<void>;
+  openRunbooksFolder: () => Promise<void>; // in the file manager
   searchRunbooks: (query: string) => Promise<SearchResult[]>; // { path, title, snippet }
   // Runs the callback when the window is about to close, then lets it close.
   onFlushRequest: (callback: () => Promise<void>) => void;

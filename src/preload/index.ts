@@ -27,6 +27,7 @@ const api: Api = {
   renameRunbook: (path, newTitle) => ipcRenderer.invoke("runbooks:rename", path, newTitle),
   deleteRunbook: (path) => ipcRenderer.invoke("runbooks:delete", path),
   showRunbookInFolder: (path) => ipcRenderer.invoke("runbooks:reveal", path),
+  openRunbooksFolder: () => ipcRenderer.invoke("runbooks:open-folder"),
   searchRunbooks: (query) => ipcRenderer.invoke("runbooks:search", query),
   // A request and reply, not a channel(): main waits for exactly one "flushed" reply,
   // sent once the callback's saves settle. Register a single handler (saveOnClose).

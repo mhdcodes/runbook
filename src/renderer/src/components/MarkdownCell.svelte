@@ -33,6 +33,7 @@
       onChange: onchange,
       onExit: () => (editing = false),
       autofocus: true,
+      // Listed, with every other shortcut, in KeyboardShortcuts.svelte.
       shortcuts: {
         Escape: () => {
           refocus = true;

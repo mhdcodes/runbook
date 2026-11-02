@@ -22,7 +22,7 @@
     $props();
 
   // Created once: it owns its document and reports edits, which come back as cell.source.
-  // Its shortcuts run before CodeMirror's own keys.
+  // Its shortcuts run before CodeMirror's own keys. All are listed in KeyboardShortcuts.svelte.
   const editor = shellEditor({
     initial: untrack(() => cell.source),
     onChange: (source) => onchange(source),

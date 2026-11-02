@@ -96,7 +96,7 @@ export class OutputPane {
     // Esc (leave the pane) and Ctrl+. (stop) are the cell's shortcuts, not
     // keys for the shell: xterm ignores them, and they reach the cell's key handler.
     // Between runs there is no shell to type to, so every key goes on to the page:
-    // Tab moves on, Ctrl+K and Ctrl+N work.
+    // Tab moves on, Ctrl+K, Ctrl+N and ? work. All are listed in KeyboardShortcuts.svelte.
     this.terminal.attachCustomKeyEventHandler(
       (event) => this.running && !(event.key === "Escape" || (event.ctrlKey && event.key === ".")),
     );

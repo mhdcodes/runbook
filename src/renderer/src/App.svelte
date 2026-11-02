@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Runbook, RunbookSummary } from "../../shared/types";
   import { messageOf } from "./state/errors";
+  import KeyboardShortcuts from "./components/KeyboardShortcuts.svelte";
   import RunbookView from "./components/RunbookView.svelte";
   import Sidebar from "./components/Sidebar.svelte";
   import UpdateBanner from "./components/UpdateBanner.svelte";
@@ -19,10 +20,20 @@
   let shown: string | null = $state(null); // the path of the runbook on screen
   let error: string | null = $state(null);
   let sidebar: ReturnType<typeof Sidebar> | undefined = $state();
+  let shortcuts: ReturnType<typeof KeyboardShortcuts> | undefined = $state();
 
-  // Window-wide shortcuts. Not inside a running cell's output pane: there
-  // Ctrl+N and Ctrl+K are bash's own keys (previous command, kill to end of line).
+  // Window-wide shortcuts, all listed in KeyboardShortcuts.svelte. Not inside a running
+  // cell's output pane: there Ctrl+N and Ctrl+K are bash's own keys (previous command,
+  // kill to end of line).
   function onkeydown(event: KeyboardEvent): void {
+    // The open dialog has the keyboard; Esc closes it natively.
+    if (event.defaultPrevented || shortcuts?.isOpen()) return;
+    if (event.key === "?" && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      if (isTyping(event.target)) return;
+      event.preventDefault();
+      shortcuts?.show();
+      return;
+    }
     const ctrl = event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey;
     const inShell =
       event.target instanceof Element && event.target.closest('[data-running="true"] .xterm');
@@ -32,6 +43,15 @@
     else if (key === "k") sidebar?.focusSearch();
     else return;
     event.preventDefault();
+  }
+
+  // Where a ? is text: fields, the cell editors (CodeMirror is contenteditable) and a
+  // running cell's output pane, which sends it to the shell. Between runs the pane
+  // passes keys on to the page, as it does Ctrl+N and Ctrl+K.
+  function isTyping(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+    if (target.closest(".xterm")) return target.closest('[data-running="true"]') !== null;
+    return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
   }
   // The runbook on screen, with every edit so far: the store is the source of truth
   // for open runbooks.
@@ -333,3 +353,5 @@
     {/if}
   </main>
 </div>
+
+<KeyboardShortcuts bind:this={shortcuts} />

@@ -26,9 +26,9 @@ AppImage (any other distribution) from the
 [releases page](https://github.com/mhdcodes/runbook/releases), then:
 
 ```sh
-sudo apt install ./runbook-*-amd64.deb
+sudo apt install ./runbook-amd64.deb
 # or
-chmod +x runbook-*-x86_64.AppImage && ./runbook-*-x86_64.AppImage
+chmod +x runbook-x86_64.AppImage && ./runbook-x86_64.AppImage
 ```
 
 ## Usage
